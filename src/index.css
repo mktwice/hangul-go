@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  background: linear-gradient(160deg, #fef3c7 0%, #fce7f3 50%, #ede9fe 100%);
+  background-attachment: fixed;
+}
+
+.font-hangul {
+  font-family: 'Noto Sans KR', system-ui, sans-serif;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.btn-press {
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+.btn-press:active {
+  transform: translateY(2px) scale(0.98);
+}

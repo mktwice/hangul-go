@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(brew install:*)",
+      "Read(//usr/local/bin/**)",
+      "Bash(/opt/homebrew/bin/brew --version)"
+    ]
+  }
+}
