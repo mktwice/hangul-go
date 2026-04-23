@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type HangulSet, type HangulCharacter } from '../db/db';
-import { speak } from '../lib/speech';
+import { playCharacterAudio } from '../lib/speech';
 
 export default function LearnMode() {
   const sets = useLiveQuery(() => db.sets.orderBy('order').toArray(), []);
@@ -140,7 +140,7 @@ function LearnSession({
 
   useEffect(() => {
     if (card) {
-      const t = setTimeout(() => speak(card.character), 250);
+      const t = setTimeout(() => playCharacterAudio(card.character), 250);
       return () => clearTimeout(t);
     }
   }, [card]);
@@ -182,7 +182,7 @@ function LearnSession({
         </div>
 
         <button
-          onClick={() => speak(card.character)}
+          onClick={() => playCharacterAudio(card.character)}
           className="mt-4 btn-press bg-brand-500 hover:bg-brand-600 text-white font-black text-sm rounded-full px-5 py-2 shadow-md flex items-center gap-2"
         >
           🔊 Replay sound

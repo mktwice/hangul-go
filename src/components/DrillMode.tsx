@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type HangulCharacter } from '../db/db';
-import { speak } from '../lib/speech';
+import { playCharacterAudio } from '../lib/speech';
 import { adjustWeight, pickDistractors, shuffle, weightedPick } from '../lib/drill';
 
 interface Question {
@@ -34,7 +34,7 @@ export default function DrillMode() {
       setQuestion({ answer, options });
       setPicked(null);
       setState('idle');
-      setTimeout(() => speak(answer.character), 200);
+      setTimeout(() => playCharacterAudio(answer.character), 200);
     },
     [unlocked]
   );
@@ -114,7 +114,7 @@ export default function DrillMode() {
             {question.answer.character}
           </div>
           <button
-            onClick={() => speak(question.answer.character)}
+            onClick={() => playCharacterAudio(question.answer.character)}
             className="absolute bottom-3 right-3 btn-press bg-brand-500 text-white rounded-full w-12 h-12 text-xl shadow-lg"
             aria-label="Replay"
           >
