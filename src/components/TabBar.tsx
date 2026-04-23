@@ -6,7 +6,7 @@ const TABS: { key: TabKey; label: string; icon: string; active: boolean }[] = [
   { key: 'vocab', label: 'Vocab', icon: '🗂️', active: false },
   { key: 'lessons', label: 'Lessons', icon: '🎓', active: false },
   { key: 'practice', label: 'Practice', icon: '💬', active: false },
-  { key: 'dashboard', label: 'Stats', icon: '📊', active: false },
+  { key: 'dashboard', label: 'Stats', icon: '📊', active: true },
 ];
 
 export default function TabBar({

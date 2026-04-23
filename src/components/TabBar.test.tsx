@@ -26,7 +26,7 @@ describe('TabBar', () => {
     expect(screen.getByRole('button', { name: /vocab/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /lessons/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /practice/i })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /stats/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /stats/i })).not.toBeDisabled();
   });
 
   it('renders active and enabled tabs with distinct styling classes', () => {
