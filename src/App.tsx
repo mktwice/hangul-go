@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import LearnMode from './components/LearnMode';
 import DrillMode from './components/DrillMode';
+import StatsMode from './components/StatsMode';
 import TabBar, { type TabKey } from './components/TabBar';
 
 export default function App() {
@@ -20,7 +21,10 @@ export default function App() {
       <main className="flex-1 pb-24">
         {tab === 'learn' && <LearnMode />}
         {tab === 'drill' && <DrillMode />}
-        {tab !== 'learn' && tab !== 'drill' && <ComingSoon tab={tab} />}
+        {tab === 'dashboard' && <StatsMode />}
+        {tab !== 'learn' && tab !== 'drill' && tab !== 'dashboard' && (
+          <ComingSoon tab={tab} />
+        )}
       </main>
 
       <TabBar active={tab} onChange={setTab} />
