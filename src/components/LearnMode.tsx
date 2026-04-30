@@ -7,22 +7,35 @@ export default function LearnMode() {
   const sets = useLiveQuery(() => db.sets.orderBy('order').toArray(), []);
   const chars = useLiveQuery(() => db.characters.toArray(), []);
   const [activeSetId, setActiveSetId] = useState<string | null>(null);
+  const [reviewSetId, setReviewSetId] = useState<string | null>(null);
 
   if (!sets || !chars) return <LoadingBlob />;
 
-  const activeSet = sets.find((s) => s.setId === activeSetId) || null;
+  const sessionSetId = activeSetId ?? reviewSetId;
+  const sessionSet = sessionSetId
+    ? sets.find((s) => s.setId === sessionSetId) ?? null
+    : null;
+  const isReview = !!reviewSetId && !activeSetId;
 
-  if (activeSet) {
+  if (sessionSet) {
     return (
       <LearnSession
-        set={activeSet}
+        set={sessionSet}
         chars={chars}
-        onBack={() => setActiveSetId(null)}
+        reviewMode={isReview}
+        onBack={() => {
+          setActiveSetId(null);
+          setReviewSetId(null);
+        }}
         onComplete={async () => {
-          await db.sets.update(activeSet.setId, { completed: 1 });
+          if (isReview) {
+            setReviewSetId(null);
+            return;
+          }
+          await db.sets.update(sessionSet.setId, { completed: 1 });
           await db.characters
             .where('character')
-            .anyOf(activeSet.characters)
+            .anyOf(sessionSet.characters)
             .modify({ unlocked: 1 });
           setActiveSetId(null);
         }}
@@ -30,17 +43,26 @@ export default function LearnMode() {
     );
   }
 
-  return <ProgressMap sets={sets} chars={chars} onPick={setActiveSetId} />;
+  return (
+    <ProgressMap
+      sets={sets}
+      chars={chars}
+      onPick={setActiveSetId}
+      onReview={setReviewSetId}
+    />
+  );
 }
 
 function ProgressMap({
   sets,
   chars,
   onPick,
+  onReview,
 }: {
   sets: HangulSet[];
   chars: HangulCharacter[];
   onPick: (id: string) => void;
+  onReview: (id: string) => void;
 }) {
   const charByKey = new Map(chars.map((c) => [c.character, c]));
   const status = (s: HangulSet, idx: number): 'done' | 'open' | 'locked' => {
@@ -65,44 +87,65 @@ function ProgressMap({
           const locked = st === 'locked';
           const done = st === 'done';
           const offsetRow = idx % 2 === 0 ? 'justify-start' : 'justify-end';
+          const cardClassName = `relative w-[78%] rounded-3xl p-4 text-left shadow-md border-4 transition ${
+            done
+              ? 'bg-gradient-to-br from-emerald-300 to-emerald-500 border-emerald-600 text-white'
+              : locked
+              ? 'bg-gray-100 border-gray-200 text-gray-400'
+              : 'bg-gradient-to-br from-brand-300 to-pink-400 border-brand-500 text-white'
+          }`;
+          const cardBody = (
+            <>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-[11px] font-extrabold uppercase opacity-80">
+                    Set {s.order}
+                  </div>
+                  <div className="text-lg font-black">{s.name}</div>
+                </div>
+                <div className="text-3xl">
+                  {done ? '✅' : locked ? '🔒' : '✨'}
+                </div>
+              </div>
+              <div className="mt-2 flex gap-1 flex-wrap">
+                {s.characters.map((ch) => (
+                  <span
+                    key={ch}
+                    className="font-hangul text-xl font-bold bg-white/30 rounded-lg px-2 py-0.5"
+                  >
+                    {ch}
+                  </span>
+                ))}
+              </div>
+              {!locked && !done && (
+                <div className="mt-2 text-xs font-bold opacity-90">Tap to begin →</div>
+              )}
+            </>
+          );
           return (
             <div key={s.setId} className={`flex ${offsetRow} my-2`}>
-              <button
-                disabled={locked}
-                onClick={() => onPick(s.setId)}
-                className={`btn-press relative w-[78%] rounded-3xl p-4 text-left shadow-md border-4 transition ${
-                  done
-                    ? 'bg-gradient-to-br from-emerald-300 to-emerald-500 border-emerald-600 text-white'
-                    : locked
-                    ? 'bg-gray-100 border-gray-200 text-gray-400'
-                    : 'bg-gradient-to-br from-brand-300 to-pink-400 border-brand-500 text-white'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-[11px] font-extrabold uppercase opacity-80">
-                      Set {s.order}
-                    </div>
-                    <div className="text-lg font-black">{s.name}</div>
-                  </div>
-                  <div className="text-3xl">
-                    {done ? '✅' : locked ? '🔒' : '✨'}
-                  </div>
-                </div>
-                <div className="mt-2 flex gap-1 flex-wrap">
-                  {s.characters.map((ch) => (
-                    <span
-                      key={ch}
-                      className="font-hangul text-xl font-bold bg-white/30 rounded-lg px-2 py-0.5"
+              {done ? (
+                <div className={cardClassName}>
+                  {cardBody}
+                  <div className="mt-3 flex justify-end">
+                    <button
+                      onClick={() => onReview(s.setId)}
+                      aria-label={`Review ${s.name}`}
+                      className="btn-press text-[11px] font-extrabold uppercase tracking-wide bg-white/30 hover:bg-white/40 rounded-full px-3 py-1"
                     >
-                      {ch}
-                    </span>
-                  ))}
+                      Review
+                    </button>
+                  </div>
                 </div>
-                {!locked && !done && (
-                  <div className="mt-2 text-xs font-bold opacity-90">Tap to begin →</div>
-                )}
-              </button>
+              ) : (
+                <button
+                  disabled={locked}
+                  onClick={() => onPick(s.setId)}
+                  className={`btn-press ${cardClassName}`}
+                >
+                  {cardBody}
+                </button>
+              )}
             </div>
           );
         })}
@@ -126,11 +169,13 @@ function LearnSession({
   chars,
   onBack,
   onComplete,
+  reviewMode = false,
 }: {
   set: HangulSet;
   chars: HangulCharacter[];
   onBack: () => void;
   onComplete: () => void;
+  reviewMode?: boolean;
 }) {
   const [idx, setIdx] = useState(0);
   const cards = set.characters
@@ -158,6 +203,11 @@ function LearnSession({
         >
           ← Back
         </button>
+        {reviewMode && (
+          <span className="text-[10px] font-black uppercase tracking-wide text-amber-800 bg-amber-200 border-2 border-amber-400 rounded-full px-2 py-0.5">
+            Review
+          </span>
+        )}
         <div className="text-xs font-extrabold text-brand-500">
           {idx + 1} / {cards.length}
         </div>
@@ -214,7 +264,7 @@ function LearnSession({
           onClick={() => (isLast ? onComplete() : setIdx((i) => i + 1))}
           className="btn-press flex-[2] bg-gradient-to-r from-brand-500 to-pink-500 text-white font-black rounded-2xl py-4 shadow-lg"
         >
-          {isLast ? '🎉 Complete Set' : 'Next →'}
+          {isLast ? (reviewMode ? 'Done reviewing' : '🎉 Complete Set') : 'Next →'}
         </button>
       </div>
     </div>
