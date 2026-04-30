@@ -32,6 +32,8 @@ export interface VocabularyItem {
   timesWrong: number;
   lastSeen: number;
   imageUrl?: string;
+  imageData?: string; // base64 data URL of generated illustration
+  imageGeneratedAt?: number;
 }
 
 export interface LessonNote {

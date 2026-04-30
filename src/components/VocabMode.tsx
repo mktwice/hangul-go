@@ -1,8 +1,28 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type VocabularyItem } from '../db/db';
 import { speakWord } from '../lib/speech';
 import { adjustWeight, shuffle } from '../lib/drill';
+
+/**
+ * POST to the /api/generate-image proxy and persist the returned base64 data
+ * URL onto the matching vocabulary row. Throws on HTTP / network failure.
+ */
+async function generateImageForWord(item: VocabularyItem): Promise<void> {
+  if (item.id == null) return;
+  const res = await fetch('/api/generate-image', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ word: item.korean, english: item.english }),
+  });
+  if (!res.ok) throw new Error(`generate-image HTTP ${res.status}`);
+  const { dataUrl } = (await res.json()) as { dataUrl: string };
+  if (!dataUrl) throw new Error('generate-image returned no dataUrl');
+  await db.vocabulary.update(item.id, {
+    imageData: dataUrl,
+    imageGeneratedAt: Date.now(),
+  });
+}
 
 type SubMode = 'browse' | 'drill';
 
@@ -47,6 +67,59 @@ function ModeToggle({
 function VocabBrowse() {
   const vocab = useLiveQuery(() => db.vocabulary.toArray(), []);
   const [openLessons, setOpenLessons] = useState<Set<number>>(new Set([1]));
+  const [inFlight, setInFlight] = useState<Set<number>>(new Set());
+  const [batch, setBatch] = useState<{ current: number; total: number } | null>(
+    null,
+  );
+  // Stops the Generate-all loop if the user navigates away mid-batch.
+  const cancelledRef = useRef(false);
+  useEffect(() => () => { cancelledRef.current = true; }, []);
+
+  const handleGenerateOne = useCallback(async (item: VocabularyItem) => {
+    if (item.id == null) return;
+    let alreadyRunning = false;
+    setInFlight((s) => {
+      if (s.has(item.id!)) {
+        alreadyRunning = true;
+        return s;
+      }
+      const ns = new Set(s);
+      ns.add(item.id!);
+      return ns;
+    });
+    if (alreadyRunning) return;
+
+    try {
+      await generateImageForWord(item);
+    } catch (e) {
+      console.warn('Image generation failed for', item.korean, e);
+    } finally {
+      setInFlight((s) => {
+        const ns = new Set(s);
+        ns.delete(item.id!);
+        return ns;
+      });
+    }
+  }, []);
+
+  const handleGenerateAll = useCallback(async () => {
+    if (!vocab) return;
+    const missing = vocab.filter((v) => !v.imageData && v.id != null);
+    if (missing.length === 0) return;
+
+    cancelledRef.current = false;
+    setBatch({ current: 0, total: missing.length });
+    for (let i = 0; i < missing.length; i++) {
+      if (cancelledRef.current) break;
+      setBatch({ current: i + 1, total: missing.length });
+      try {
+        await generateImageForWord(missing[i]);
+      } catch (e) {
+        console.warn('Image generation failed for', missing[i].korean, e);
+      }
+    }
+    setBatch(null);
+  }, [vocab]);
 
   if (!vocab) return <Loading />;
 
@@ -56,6 +129,7 @@ function VocabBrowse() {
     byLesson.get(w.lesson)!.push(w);
   }
   const lessons = [...byLesson.keys()].sort((a, b) => a - b);
+  const missingCount = vocab.filter((v) => !v.imageData).length;
 
   const toggle = (lesson: number) => {
     setOpenLessons((s) => {
@@ -68,11 +142,24 @@ function VocabBrowse() {
 
   return (
     <div className="flex-1 overflow-y-auto pb-4">
-      <div className="mb-3">
-        <h2 className="text-2xl font-black text-brand-700">Vocab Bank</h2>
-        <p className="text-sm text-brand-500 font-semibold">
-          Tap a lesson to expand. Tap a word to hear it.
-        </p>
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-2xl font-black text-brand-700">Vocab Bank</h2>
+          <p className="text-sm text-brand-500 font-semibold">
+            Tap a lesson to expand. Tap a word to hear it.
+          </p>
+        </div>
+        {(missingCount > 0 || batch) && (
+          <button
+            onClick={handleGenerateAll}
+            disabled={batch !== null}
+            className="btn-press flex-shrink-0 self-start bg-gradient-to-br from-brand-500 to-pink-500 text-white text-[11px] font-black uppercase tracking-wide rounded-full px-3 py-2 shadow-md disabled:opacity-70 disabled:cursor-wait"
+          >
+            {batch
+              ? `Generating ${batch.current}/${batch.total}…`
+              : `🎨 Generate all (${missingCount})`}
+          </button>
+        )}
       </div>
 
       <div className="space-y-3">
@@ -112,29 +199,37 @@ function VocabBrowse() {
 
               {isOpen && (
                 <ul className="border-t-2 border-brand-100 divide-y-2 divide-brand-50">
-                  {words.map((w) => (
-                    <li key={w.id}>
-                      <button
-                        onClick={() => speakWord(w.korean)}
-                        className="btn-press w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-brand-50 transition"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <div className="font-hangul text-2xl font-black text-brand-700 leading-tight truncate">
-                            {w.korean}
+                  {words.map((w) => {
+                    const isInFlight = w.id != null && inFlight.has(w.id);
+                    return (
+                      <li key={w.id} className="flex items-center gap-3 px-4 py-3 hover:bg-brand-50">
+                        <ImageCell
+                          item={w}
+                          inFlight={isInFlight}
+                          onGenerate={() => handleGenerateOne(w)}
+                        />
+                        <button
+                          onClick={() => speakWord(w.korean)}
+                          className="btn-press min-w-0 flex-1 flex items-center justify-between gap-2 text-left"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="font-hangul text-2xl font-black text-brand-700 leading-tight truncate">
+                              {w.korean}
+                            </div>
+                            <div className="text-[11px] font-black text-pink-500 uppercase tracking-wide">
+                              {w.romanization}
+                            </div>
                           </div>
-                          <div className="text-[11px] font-black text-pink-500 uppercase tracking-wide">
-                            {w.romanization}
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <div className="text-sm font-bold text-brand-500 italic text-right max-w-[7rem]">
+                              {w.english}
+                            </div>
+                            <span className="text-xl">🔊</span>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <div className="text-sm font-bold text-brand-500 italic text-right max-w-[9rem]">
-                            {w.english}
-                          </div>
-                          <span className="text-xl">🔊</span>
-                        </div>
-                      </button>
-                    </li>
-                  ))}
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>
@@ -142,6 +237,43 @@ function VocabBrowse() {
         })}
       </div>
     </div>
+  );
+}
+
+function ImageCell({
+  item,
+  inFlight,
+  onGenerate,
+}: {
+  item: VocabularyItem;
+  inFlight: boolean;
+  onGenerate: () => void;
+}) {
+  if (item.imageData) {
+    return (
+      <img
+        src={item.imageData}
+        alt={item.english}
+        className="flex-shrink-0 w-14 h-14 rounded-2xl object-cover bg-brand-50 border-2 border-brand-200"
+      />
+    );
+  }
+  if (inFlight) {
+    return (
+      <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-brand-50 border-2 border-brand-200 flex items-center justify-center">
+        <span className="text-xl animate-spin">⏳</span>
+      </div>
+    );
+  }
+  return (
+    <button
+      onClick={onGenerate}
+      aria-label={`Generate image for ${item.english}`}
+      className="btn-press flex-shrink-0 w-14 h-14 rounded-2xl bg-brand-50 border-2 border-dashed border-brand-300 flex flex-col items-center justify-center text-brand-500"
+    >
+      <span className="text-lg leading-none">🎨</span>
+      <span className="text-[8px] font-black uppercase mt-0.5">Gen</span>
+    </button>
   );
 }
 
