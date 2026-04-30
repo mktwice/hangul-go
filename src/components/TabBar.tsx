@@ -3,7 +3,7 @@ export type TabKey = 'learn' | 'drill' | 'vocab' | 'lessons' | 'practice' | 'das
 const TABS: { key: TabKey; label: string; icon: string; active: boolean }[] = [
   { key: 'learn', label: 'Learn', icon: '📚', active: true },
   { key: 'drill', label: 'Drill', icon: '⚡', active: true },
-  { key: 'vocab', label: 'Vocab', icon: '🗂️', active: false },
+  { key: 'vocab', label: 'Vocab', icon: '🗂️', active: true },
   { key: 'lessons', label: 'Lessons', icon: '🎓', active: false },
   { key: 'practice', label: 'Practice', icon: '💬', active: false },
   { key: 'dashboard', label: 'Stats', icon: '📊', active: true },

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { HANGUL_CHARS, HANGUL_SETS } from '../data/hangul';
+import { VOCABULARY } from '../data/vocabulary';
 
 async function loadFreshDb() {
   vi.resetModules();
@@ -22,11 +23,12 @@ afterEach(async () => {
 });
 
 describe('seedDatabase', () => {
-  it('populates characters and sets on first run', async () => {
+  it('populates characters, sets, and vocabulary on first run', async () => {
     const { db, seedDatabase } = await loadFreshDb();
     await seedDatabase();
     expect(await db.characters.count()).toBe(HANGUL_CHARS.length);
     expect(await db.sets.count()).toBe(HANGUL_SETS.length);
+    expect(await db.vocabulary.count()).toBe(VOCABULARY.length);
   });
 
   it('is idempotent — running twice does not duplicate records', async () => {
@@ -35,6 +37,20 @@ describe('seedDatabase', () => {
     await seedDatabase();
     expect(await db.characters.count()).toBe(HANGUL_CHARS.length);
     expect(await db.sets.count()).toBe(HANGUL_SETS.length);
+    expect(await db.vocabulary.count()).toBe(VOCABULARY.length);
+  });
+
+  it('seeds each vocab word with default weight 1, lesson set, empty imageUrl', async () => {
+    const { db, seedDatabase } = await loadFreshDb();
+    await seedDatabase();
+    const vocab = await db.vocabulary.toArray();
+    for (const v of vocab) {
+      expect(v.weight).toBe(1.0);
+      expect(v.timesCorrect).toBe(0);
+      expect(v.timesWrong).toBe(0);
+      expect(v.imageUrl).toBe('');
+      expect([1, 2, 3, 4]).toContain(v.lesson);
+    }
   });
 
   it('seeds each character with default weight 1 and unlocked=0', async () => {

@@ -1,5 +1,6 @@
 import { db } from './db';
 import { HANGUL_CHARS, HANGUL_SETS } from '../data/hangul';
+import { VOCABULARY } from '../data/vocabulary';
 
 export async function seedDatabase() {
   try {
@@ -30,6 +31,23 @@ export async function seedDatabase() {
           characters: s.characters,
           order: s.order,
           completed: 0,
+        }))
+      );
+    }
+
+    const vocabCount = await db.vocabulary.count();
+    if (vocabCount === 0) {
+      await db.vocabulary.bulkAdd(
+        VOCABULARY.map((v) => ({
+          korean: v.korean,
+          romanization: v.romanization,
+          english: v.english,
+          lesson: v.lesson,
+          weight: 1.0,
+          timesCorrect: 0,
+          timesWrong: 0,
+          lastSeen: 0,
+          imageUrl: '',
         }))
       );
     }

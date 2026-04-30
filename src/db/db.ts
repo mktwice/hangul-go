@@ -21,13 +21,19 @@ export interface HangulSet {
   order: number;
 }
 
-// Future phase placeholders
 export interface VocabularyItem {
   id?: number;
-  word: string;
-  meaning: string;
-  createdAt: number;
+  korean: string;
+  romanization: string;
+  english: string;
+  lesson: number;
+  weight: number;
+  timesCorrect: number;
+  timesWrong: number;
+  lastSeen: number;
+  imageUrl?: string;
 }
+
 export interface LessonNote {
   id?: number;
   title: string;
@@ -58,6 +64,12 @@ export class HangulGoDB extends Dexie {
       vocabulary: '++id, word, createdAt',
       lessonNotes: '++id, title, createdAt',
       conversationHistory: '++id, role, createdAt',
+    });
+
+    // v2: vocabulary store reshaped for Phase 2 (Vocab Bank). Old shape was a
+    // placeholder with no rows in practice, so no data upgrade function needed.
+    this.version(2).stores({
+      vocabulary: '++id, korean, lesson',
     });
   }
 }
