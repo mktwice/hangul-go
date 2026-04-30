@@ -16,14 +16,14 @@ describe('TabBar', () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
     render(<TabBar active="learn" onChange={onChange} />);
-    await user.click(screen.getByRole('button', { name: /vocab/i }));
+    await user.click(screen.getByRole('button', { name: /lessons/i }));
     expect(onChange).not.toHaveBeenCalled();
   });
 
   it('disables inactive tabs via the disabled attribute', () => {
     const onChange = vi.fn();
     render(<TabBar active="learn" onChange={onChange} />);
-    expect(screen.getByRole('button', { name: /vocab/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /vocab/i })).not.toBeDisabled();
     expect(screen.getByRole('button', { name: /lessons/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /practice/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /stats/i })).not.toBeDisabled();
@@ -34,7 +34,7 @@ describe('TabBar', () => {
     render(<TabBar active="learn" onChange={onChange} />);
     const activeBtn = screen.getByRole('button', { name: /learn/i });
     const enabledBtn = screen.getByRole('button', { name: /drill/i });
-    const disabledBtn = screen.getByRole('button', { name: /vocab/i });
+    const disabledBtn = screen.getByRole('button', { name: /lessons/i });
     expect(activeBtn.className).toMatch(/text-brand-700/);
     expect(enabledBtn.className).toMatch(/text-brand-400/);
     expect(disabledBtn.className).toMatch(/text-gray-300/);

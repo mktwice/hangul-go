@@ -109,6 +109,13 @@ export function speak(text: string) {
   voicesReady.then(() => doSpeak(text));
 }
 
+// Vocab words have no pre-recorded audio yet — go straight to Web Speech.
+// Wrapped (rather than re-exported as `speak`) so a future pre-recorded word
+// audio path can be swapped in here without touching call sites.
+export function speakWord(word: string) {
+  speak(word);
+}
+
 // ---------------------------------------------------------------------------
 // Pre-recorded character audio
 // ---------------------------------------------------------------------------
