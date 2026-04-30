@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type VocabularyItem } from '../db/db';
-import { speakWord } from '../lib/speech';
+import { playWordAudio } from '../lib/speech';
 import { adjustWeight, shuffle } from '../lib/drill';
 
 /**
@@ -209,7 +209,7 @@ function VocabBrowse() {
                           onGenerate={() => handleGenerateOne(w)}
                         />
                         <button
-                          onClick={() => speakWord(w.korean)}
+                          onClick={() => playWordAudio(w.korean)}
                           className="btn-press min-w-0 flex-1 flex items-center justify-between gap-2 text-left"
                         >
                           <div className="min-w-0 flex-1">
@@ -303,7 +303,7 @@ function VocabDrill() {
       setQuestion({ answer, options });
       setPicked(null);
       setState('idle');
-      setTimeout(() => speakWord(answer.korean), 200);
+      setTimeout(() => playWordAudio(answer.korean), 200);
     },
     [vocab]
   );
@@ -387,7 +387,7 @@ function VocabDrill() {
             {question.answer.romanization}
           </div>
           <button
-            onClick={() => speakWord(question.answer.korean)}
+            onClick={() => playWordAudio(question.answer.korean)}
             className="absolute bottom-3 right-3 btn-press bg-brand-500 text-white rounded-full w-11 h-11 text-lg shadow-lg"
             aria-label="Replay"
           >
