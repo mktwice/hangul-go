@@ -15,9 +15,9 @@
 set -euo pipefail
 
 VOICE="Yuna (Premium)"
-# 130 wpm — about 75% of `say`'s default 175. Single Hangul syllables fly by
-# at default speed; learners need every clip to land clearly.
-RATE=130
+# 80 wpm — under half of `say`'s default 175. Single Hangul syllables need
+# to land slowly enough for a learner to hear vowel/consonant shape distinctly.
+RATE=80
 OUT_DIR="public/audio/hangul"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT

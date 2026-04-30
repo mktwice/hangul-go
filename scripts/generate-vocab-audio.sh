@@ -14,10 +14,11 @@
 set -euo pipefail
 
 VOICE="Yuna (Premium)"
-# 150 wpm — about 85% of `say`'s default 175. Multi-syllable words read
-# naturally at this pace; the slower 130 used for single-syllable Hangul
-# would feel painfully drawn out across longer words.
-RATE=150
+# 100 wpm — about 57% of `say`'s default 175. Multi-syllable words still
+# read naturally at this pace, but slow enough that learners can hear each
+# syllable. A bit faster than the 80 used for single-syllable Hangul since
+# 80 across longer words would feel painfully drawn out.
+RATE=100
 SRC="src/data/vocabulary.ts"
 OUT_DIR="public/audio/vocab"
 TMP_DIR="$(mktemp -d)"
