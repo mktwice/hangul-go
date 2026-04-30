@@ -14,6 +14,10 @@
 set -euo pipefail
 
 VOICE="Yuna (Premium)"
+# 150 wpm — about 85% of `say`'s default 175. Multi-syllable words read
+# naturally at this pace; the slower 130 used for single-syllable Hangul
+# would feel painfully drawn out across longer words.
+RATE=150
 SRC="src/data/vocabulary.ts"
 OUT_DIR="public/audio/vocab"
 TMP_DIR="$(mktemp -d)"
@@ -61,7 +65,7 @@ for word in "${WORDS[@]}"; do
   fi
 
   aiff="$TMP_DIR/$word.aiff"
-  say -v "$VOICE" -o "$aiff" "$word"
+  say -v "$VOICE" -r "$RATE" -o "$aiff" "$word"
 
   # AAC @ 64kbps mono — same encoding as the Hangul clips.
   afconvert \
