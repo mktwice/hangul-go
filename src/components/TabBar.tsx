@@ -4,7 +4,7 @@ const TABS: { key: TabKey; label: string; icon: string; active: boolean }[] = [
   { key: 'learn', label: 'Learn', icon: '📚', active: true },
   { key: 'drill', label: 'Drill', icon: '⚡', active: true },
   { key: 'vocab', label: 'Vocab', icon: '🗂️', active: true },
-  { key: 'lessons', label: 'Lessons', icon: '🎓', active: false },
+  { key: 'lessons', label: 'Lessons', icon: '🎓', active: true },
   { key: 'practice', label: 'Practice', icon: '💬', active: false },
   { key: 'dashboard', label: 'Stats', icon: '📊', active: true },
 ];

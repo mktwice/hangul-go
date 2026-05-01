@@ -23,12 +23,13 @@ afterEach(async () => {
 });
 
 describe('seedDatabase', () => {
-  it('populates characters, sets, and vocabulary on first run', async () => {
+  it('populates characters, sets, vocabulary, and lessons on first run', async () => {
     const { db, seedDatabase } = await loadFreshDb();
     await seedDatabase();
     expect(await db.characters.count()).toBe(HANGUL_CHARS.length);
     expect(await db.sets.count()).toBe(HANGUL_SETS.length);
     expect(await db.vocabulary.count()).toBe(VOCABULARY.length);
+    expect(await db.lessons.count()).toBe(4);
   });
 
   it('is idempotent — running twice does not duplicate records', async () => {
@@ -38,6 +39,22 @@ describe('seedDatabase', () => {
     expect(await db.characters.count()).toBe(HANGUL_CHARS.length);
     expect(await db.sets.count()).toBe(HANGUL_SETS.length);
     expect(await db.vocabulary.count()).toBe(VOCABULARY.length);
+    expect(await db.lessons.count()).toBe(4);
+  });
+
+  it('seeds each lesson with non-empty vocabIds matching its lesson number', async () => {
+    const { db, seedDatabase } = await loadFreshDb();
+    await seedDatabase();
+    const lessons = await db.lessons.orderBy('lessonNumber').toArray();
+    expect(lessons.map((l) => l.lessonNumber)).toEqual([1, 2, 3, 4]);
+    for (const l of lessons) {
+      expect(l.vocabIds.length).toBeGreaterThan(0);
+      const vocab = await db.vocabulary.bulkGet(l.vocabIds);
+      for (const v of vocab) {
+        expect(v).toBeDefined();
+        expect(v!.lesson).toBe(l.lessonNumber);
+      }
+    }
   });
 
   it('seeds each vocab word with default weight 1, lesson set, empty imageUrl', async () => {

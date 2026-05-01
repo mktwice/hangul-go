@@ -2,6 +2,7 @@ import { useState } from 'react';
 import LearnMode from './components/LearnMode';
 import DrillMode from './components/DrillMode';
 import VocabMode from './components/VocabMode';
+import LessonsMode from './components/LessonsMode';
 import StatsMode from './components/StatsMode';
 import TabBar, { type TabKey } from './components/TabBar';
 
@@ -23,10 +24,12 @@ export default function App() {
         {tab === 'learn' && <LearnMode />}
         {tab === 'drill' && <DrillMode />}
         {tab === 'vocab' && <VocabMode />}
+        {tab === 'lessons' && <LessonsMode />}
         {tab === 'dashboard' && <StatsMode />}
         {tab !== 'learn' &&
           tab !== 'drill' &&
           tab !== 'vocab' &&
+          tab !== 'lessons' &&
           tab !== 'dashboard' && <ComingSoon tab={tab} />}
       </main>
 

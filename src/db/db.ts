@@ -42,6 +42,29 @@ export interface LessonNote {
   body: string;
   createdAt: number;
 }
+
+export interface ExampleSentence {
+  korean: string;
+  english: string;
+}
+
+export interface Lesson {
+  id?: number;
+  lessonNumber: number;
+  title: string;
+  topic: string;
+  date?: string; // ISO date (YYYY-MM-DD)
+  // Primary keys into the characters table (which is keyed by unicode string,
+  // not auto-incremented). Naming reflects that — these are string keys.
+  characterKeys: string[];
+  vocabIds: number[];
+  grammarNotes: string;
+  exampleSentences: ExampleSentence[];
+  myNotes: string;
+  questionsForNext: string[];
+  createdAt: number;
+  updatedAt: number;
+}
 export interface ConversationMessage {
   id?: number;
   role: string;
@@ -54,6 +77,7 @@ export class HangulGoDB extends Dexie {
   sets!: Table<HangulSet, string>;
   vocabulary!: Table<VocabularyItem, number>;
   lessonNotes!: Table<LessonNote, number>;
+  lessons!: Table<Lesson, number>;
   conversationHistory!: Table<ConversationMessage, number>;
 
   constructor() {
@@ -72,6 +96,13 @@ export class HangulGoDB extends Dexie {
     // placeholder with no rows in practice, so no data upgrade function needed.
     this.version(2).stores({
       vocabulary: '++id, korean, lesson',
+    });
+
+    // v3: Phase 3 (Lessons). New `lessons` store; the v1 `lessonNotes`
+    // placeholder is left untouched (always empty in practice). lessonNumber
+    // is unique so adding the same lesson twice is rejected.
+    this.version(3).stores({
+      lessons: '++id, &lessonNumber',
     });
   }
 }
