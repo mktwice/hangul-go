@@ -5,6 +5,8 @@ type SpeechStub = {
   speak: ReturnType<typeof vi.fn>;
   getVoices: () => SpeechSynthesisVoice[];
   onvoiceschanged: (() => void) | null;
+  addEventListener: ReturnType<typeof vi.fn>;
+  removeEventListener: ReturnType<typeof vi.fn>;
 };
 
 function installSpeechSynthesis(voices: Partial<SpeechSynthesisVoice>[]): SpeechStub {
@@ -13,6 +15,10 @@ function installSpeechSynthesis(voices: Partial<SpeechSynthesisVoice>[]): Speech
     speak: vi.fn(),
     getVoices: () => voices as SpeechSynthesisVoice[],
     onvoiceschanged: null,
+    // speech.ts subscribes to the 'voiceschanged' event at module scope; the
+    // mock has to accept addEventListener or import-time evaluation throws.
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
   };
   Object.defineProperty(window, 'speechSynthesis', {
     value: stub,
@@ -113,8 +119,12 @@ describe('voice selection', () => {
     const stub = installSpeechSynthesis(voices);
     const getVoicesSpy = vi.spyOn(stub, 'getVoices');
     const { speak } = await import('./speech');
+    // Module init already queries getVoices a couple of times to populate the
+    // cache. The semantic we care about is that subsequent speak() calls don't
+    // re-query — the voice is cached.
+    const callsAfterInit = getVoicesSpy.mock.calls.length;
     speak('one');
     speak('two');
-    expect(getVoicesSpy).toHaveBeenCalledTimes(1);
+    expect(getVoicesSpy.mock.calls.length).toBe(callsAfterInit);
   });
 });
