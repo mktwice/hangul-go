@@ -15,6 +15,9 @@
 set -euo pipefail
 
 VOICE="Yuna (Premium)"
+# 80 wpm — under half of `say`'s default 175. Single Hangul syllables need
+# to land slowly enough for a learner to hear vowel/consonant shape distinctly.
+RATE=80
 OUT_DIR="public/audio/hangul"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
@@ -59,7 +62,7 @@ for ch in "${CHARS[@]}"; do
   out="$OUT_DIR/$ch.m4a"
 
   # Record using `say`'s default format (AIFF-C).
-  say -v "$VOICE" -o "$aiff" "$ch"
+  say -v "$VOICE" -r "$RATE" -o "$aiff" "$ch"
 
   # Convert to AAC @ 64kbps mono. Quality is indistinguishable from source
   # for a one-second clip and cuts file size by ~80% vs AIFF.
