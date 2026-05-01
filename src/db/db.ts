@@ -72,6 +72,37 @@ export interface ConversationMessage {
   createdAt: number;
 }
 
+export interface ConversationCorrection {
+  original: string;
+  corrected: string;
+  explanation: string;
+}
+
+export interface ConversationVocabItem {
+  korean: string;
+  english: string;
+}
+
+export interface ConversationTurn {
+  role: 'user' | 'assistant';
+  korean: string;
+  english?: string;
+  correction?: ConversationCorrection;
+  newVocab?: ConversationVocabItem[]; // assistant turns only — for tap-to-translate lookup
+  timestamp: number;
+}
+
+export interface Conversation {
+  id?: number;
+  scenarioId: string;
+  scenarioTitle: string;
+  startedAt: number;
+  endedAt?: number;
+  messages: ConversationTurn[];
+  mistakesSummary: ConversationCorrection[];
+  newVocabLearned: ConversationVocabItem[];
+}
+
 export class HangulGoDB extends Dexie {
   characters!: Table<HangulCharacter, string>;
   sets!: Table<HangulSet, string>;
@@ -79,6 +110,7 @@ export class HangulGoDB extends Dexie {
   lessonNotes!: Table<LessonNote, number>;
   lessons!: Table<Lesson, number>;
   conversationHistory!: Table<ConversationMessage, number>;
+  conversations!: Table<Conversation, number>;
 
   constructor() {
     super('hangul-go');
@@ -103,6 +135,12 @@ export class HangulGoDB extends Dexie {
     // is unique so adding the same lesson twice is rejected.
     this.version(3).stores({
       lessons: '++id, &lessonNumber',
+    });
+
+    // v4: Phase 4 (Practice). New `conversations` store; the v1
+    // `conversationHistory` placeholder is left untouched.
+    this.version(4).stores({
+      conversations: '++id, scenarioId, startedAt',
     });
   }
 }
